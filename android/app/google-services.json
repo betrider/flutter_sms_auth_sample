@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "904030671929",
+    "project_id": "flutter-sms-auth",
+    "storage_bucket": "flutter-sms-auth.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:904030671929:android:d2f1540cd51b4dea9869e8",
+        "android_client_info": {
+          "package_name": "com.example.sms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "904030671929-7ejbfbe50isho55vr72k90sfjp03oh9k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.sms",
+            "certificate_hash": "7fdd29f82e40a4a945bbd5d560c6eac8af362922"
+          }
+        },
+        {
+          "client_id": "904030671929-52kk1m4ja17i27knop4grdjofjpo7i49.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmxvtyCfIKeqM2xmVsYmvhCMlVpTwVPs4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "904030671929-52kk1m4ja17i27knop4grdjofjpo7i49.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "904030671929-ed3dsqji5t8ml1mivh96jbftivilfilp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.sms"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

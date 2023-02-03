@@ -1,115 +1,155 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:sms/firebase_options.dart';
 
-void main() {
+FirebaseAuth auth = FirebaseAuth.instance;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // 비동기 사용시 추가
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); // 필수추가
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  // 재발송 토큰번호
+  int? resendToken;
+  // 인증 고유코드
+  String? verificationId;
+  // 인증번호
+  String smsCode = '';
+  // 발송여부
+  bool isSend = false;
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
+        child: isSend == false
+            ? ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    isSend = true;
+                  });
+                  verifyPhoneNumber();
+                },
+                child: Text('인증번호 발송'),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => verifyPhoneNumber(),
+                    child: Text('인증번호 재발송'),
+                  ),
+                  SizedBox(height: 16,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        child: TextField(
+                          onChanged: (value) {
+                            setState(() {
+                              smsCode = value;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: '인증번호를 입력해주세요.',
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16,),
+                      ElevatedButton(
+                        onPressed: smsCode.length == 6 ? () => signInWithCredential() : null,
+                        child: Text('인증'),
+                      ),
+                    ],
+                  )
+                ],
+              ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  /// 인증번호 발송&재발송
+  void verifyPhoneNumber() async {
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: '+82 10 1111 2222',
+      timeout: const Duration(seconds: 60),
+      forceResendingToken: resendToken,
+      // Android 기기에서 SMS 코드를 자동으로 처리합니다.
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        print('verificationCompleted');
+        await auth.signInWithCredential(credential,);
+      },
+      // 유효하지 않은 전화번호 또는 SMS 할당량 초과 여부와 같은 실패 이벤트를 처리합니다.
+      verificationFailed: (FirebaseAuthException e) {
+        print('verificationFailed');
+        if (e.code == 'invalid-phone-number') {
+          print('The provided phone number is not valid.');
+        }
+      },
+      // 사용자에게 코드를 입력하라는 메시지를 표시하는 데 사용되는 코드가 Firebase에서 기기로 전송된 경우를 처리합니다.
+      codeSent: (String verificationId, int? resendToken) async {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('인증번호가 발송되었습니다.'),
+          ),
+        );
+        setState(() {
+          this.verificationId = verificationId;
+          this.resendToken = resendToken;
+        });
+      },
+      // 자동 SMS 코드 처리가 실패할 때의 시간 초과를 처리합니다.
+      codeAutoRetrievalTimeout: (String verificationId) {
+        print('codeAutoRetrievalTimeout');
+      },
+    );
+  }
+
+  /// 인증
+  void signInWithCredential() async {
+    try {
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(verificationId: verificationId!, smsCode: smsCode);
+      UserCredential userCredential = await auth.signInWithCredential(credential);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('인증 성공'),
+        ),
+      );
+      print(userCredential);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('인증 실패'),
+        ),
+      );
+    }
   }
 }
